@@ -7,6 +7,9 @@
 
 #include "tp.h"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 #if defined(TP_DEBUG) && TP_DEBUG > 0
 #define LOG(format, ...) printf(format, ##__VA_ARGS__)
 #else
@@ -15,19 +18,24 @@
 
 typedef struct {
         void **array;
-        size_t size;
+        ssize_t size;
         void *(*func)(void *);
-        ptrdiff_t *next_ptr;
+        ssize_t *next_ptr;
         pthread_mutex_t *mutex;
 } TPData;
 
 
-static inline ptrdiff_t
-ask_for_offset(ptrdiff_t *next_ptr, pthread_mutex_t *mutex, size_t arr_size)
+static inline ssize_t
+ask_for_offset(ssize_t *next_ptr, pthread_mutex_t *mutex, ssize_t arr_size)
 {
-        ptrdiff_t ret;
+        ssize_t ret;
         pthread_mutex_lock(mutex);
-        ret = ++*next_ptr;
+        ret = *next_ptr;
+#if defined(CHUNK_SIZE) && CHUNK_SIZE > 1
+        *next_ptr += (CHUNK_SIZE);
+#else
+        ++*next_ptr;
+#endif
         pthread_mutex_unlock(mutex);
         return ret < arr_size ? ret : -1;
 }
@@ -36,19 +44,29 @@ static void *
 tp_thread_routine(void *args)
 {
         TPData data = *(TPData *) args;
-        ptrdiff_t arr_ptr;
+        ssize_t arr_ptr;
+        ssize_t end = (CHUNK_SIZE);
 
         while ((arr_ptr = ask_for_offset(data.next_ptr, data.mutex, data.size)) >= 0) {
+#if defined(CHUNK_SIZE) && CHUNK_SIZE > 1
+                {
+                        if (data.size < arr_ptr + (CHUNK_SIZE))
+                                end = data.size - arr_ptr;
+                        for (ssize_t offset = 0; offset < end; offset++)
+                                data.array[arr_ptr + offset] = data.func(data.array[arr_ptr + offset]);
+                }
+#else
                 data.array[arr_ptr] = data.func(data.array[arr_ptr]);
+#endif
         }
 
         return NULL;
 }
 
 void
-thread_pool(void **array, size_t size, void *(*func)(void *) )
+thread_pool(void **array, ssize_t size, void *(*func)(void *) )
 {
-        ptrdiff_t next_ptr = 0;
+        ssize_t next_ptr = 0;
         pthread_mutex_t next_ptr_mutex;
         pthread_t threads[NUM_THREADS];
 
@@ -71,7 +89,7 @@ thread_pool(void **array, size_t size, void *(*func)(void *) )
         }
 }
 
-// #define TP_TEST
+#define TP_TEST
 #ifdef TP_TEST
 
 #include <math.h>
@@ -102,7 +120,7 @@ struct timespec tp;
 int
 main()
 {
-        int ARR_SIZE  = 100000;
+        int ARR_SIZE = 100000;
         void *arr[ARR_SIZE];
         for (int i = 0; i < ARR_SIZE; i++) {
                 arr[i] = NULL + i;

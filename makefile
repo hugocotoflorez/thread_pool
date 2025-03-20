@@ -1,2 +1,2 @@
 all:
-	gcc tp.c -lm -fsanitize=address,null -g
+	gcc tp.c -lm -ggdb -Wall -Wextra
