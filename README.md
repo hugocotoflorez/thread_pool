@@ -14,7 +14,7 @@ have to be returned, and arguement should not be modified.
 
 ### Disclaimer
 
-Array have to be an `void* arr[]` and func have to be
+Array have to be a `void* arr[]` and func have to be
 `void* (*func)(*void)` because of this. It would be
 changed in the future (or not).
 
