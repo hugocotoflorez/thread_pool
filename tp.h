@@ -2,8 +2,7 @@
 #define TP_H
 
 #define NUM_THREADS 12
-#define CHUNK_SIZE 1024 * 4
-
+#define CHUNK_SIZE 256
 #include <sys/types.h> // ssize_t
 
 /* Create NUM_THREADS threads and change every element of

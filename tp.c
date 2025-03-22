@@ -7,8 +7,6 @@
 
 #include "tp.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #define TP_DEBUG 1
 #if defined(TP_DEBUG) && TP_DEBUG > 0
@@ -41,12 +39,15 @@ ask_for_offset(ssize_t *next_ptr, pthread_mutex_t *mutex, ssize_t arr_size)
         return ret < arr_size ? ret : -1;
 }
 
+
 static void *
 tp_thread_routine(void *args)
 {
         TPData data = *(TPData *) args;
         ssize_t arr_ptr;
+#if defined(CHUNK_SIZE) && CHUNK_SIZE > 1
         ssize_t end = (CHUNK_SIZE);
+#endif
 
         while ((arr_ptr = ask_for_offset(data.next_ptr, data.mutex, data.size)) >= 0) {
 #if defined(CHUNK_SIZE) && CHUNK_SIZE > 1
@@ -80,13 +81,13 @@ thread_pool(void **array, ssize_t size, void *(*func)(void *) )
         };
 
         for (int i = 0; i < NUM_THREADS; i++) {
-                LOG("[CREATE] thread %d\n", i);
                 pthread_create(threads + i, NULL, tp_thread_routine, &data);
+                LOG("[CREATED] thread %d\n", i);
         }
 
         for (int i = 0; i < NUM_THREADS; i++) {
-                LOG("[JOIN] thread %d\n", i);
                 pthread_join(threads[i], NULL);
+                LOG("[JOINED] thread %d\n", i);
         }
 }
 
@@ -121,7 +122,7 @@ struct timespec tp;
 int
 main()
 {
-        int ARR_SIZE = 100000;
+        int ARR_SIZE = 1000000;
         void *arr[ARR_SIZE];
         for (int i = 0; i < ARR_SIZE; i++) {
                 arr[i] = NULL + i;
