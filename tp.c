@@ -91,7 +91,7 @@ thread_pool(void **array, ssize_t size, void *(*func)(void *) )
         }
 }
 
-#define TP_TEST
+//#define TP_TEST
 #ifdef TP_TEST
 
 #include <math.h>
