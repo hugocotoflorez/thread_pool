@@ -1,2 +1,2 @@
 all:
-	gcc tp.c -lm -ggdb -Wall -Wextra
+	gcc tp.c -lm -ggdb -Wall -Wextra -O0
