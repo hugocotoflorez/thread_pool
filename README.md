@@ -2,20 +2,18 @@
 
 ## Syntax
 ```c
-void thread_pool(void **array, size_t size, void *(*func)(void *) );
+void thread_pool(T array[arrlen], size_t arrlen, size_t elemsize, void (*func)(T *), int numthreads = NUM_THREADS);
 ```
 
 ## Description
 
-Create NUM_THREADS threads and change every element of
-ARRAY with the element returned by FUNC, with arguments
-the previous element at this position. The new element
-have to be returned, and arguement should not be modified.
+Apply func to all elements of array in parallel.
 
-### Disclaimer
+## More info
 
-Array have to be a `void* arr[]` and func have to be
-`void* (*func)(*void)` because of this. It would be
-changed in the future (or not).
+Array can be of any type T, with arrlen elements of size elemsize bytes.
+Function acceps different types in each call. The function acceps a forth
+argument numthreads, which is the number of threads to be used. Func takes
+a pointer to an element of array, that should modify in place.
 
 

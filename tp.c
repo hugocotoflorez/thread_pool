@@ -1,19 +1,18 @@
-
-#define TP_TEST
-#ifdef TP_TEST
-
 #include <math.h>
 #include <time.h>
 
 #define TP_IMPLEMENTATION
 #include "tp.h"
 
-#define TYPE int
+typedef struct {
+        int a, b;
+} TYPE;
+
 void
 _sqrt(TYPE *n)
 {
+        n->a = n->a + n->b;
         usleep(2);
-        *n = (int) sqrt((double) (intptr_t) *n);
 }
 
 struct timespec tp;
@@ -37,14 +36,12 @@ main()
         int ARR_SIZE = 1024;
         TYPE arr[ARR_SIZE];
         for (int i = 0; i < ARR_SIZE; i++) {
-                arr[i] = (TYPE) i;
+                arr[i] = (TYPE) { i, i % 3 };
         }
 
         TIME_START();
-        thread_pool(arr, ARR_SIZE, sizeof(TYPE), _sqrt);
+        thread_pool(arr, ARR_SIZE, sizeof(TYPE), _sqrt, 4);
         TIME_REPORT();
 
         return 0;
 }
-
-#endif

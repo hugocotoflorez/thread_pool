@@ -2,7 +2,7 @@
 #define TP_H_
 
 #define TP_DEBUG 1
-#define NUM_THREADS 1
+#define NUM_THREADS 12
 #define CHUNK_SIZE 1024
 #define STACK_SIZE 1024 * 1024
 
@@ -22,8 +22,8 @@
 #include <unistd.h>
 
 
-#define TP_IMPLEMENTATION
 #ifdef TP_IMPLEMENTATION
+
 
 #if defined(TP_DEBUG) && TP_DEBUG > 0
 #define LOG(format, ...) printf(format, ##__VA_ARGS__)
@@ -59,7 +59,6 @@ ask_for_offset(ssize_t *next_index, pthread_mutex_t *mutex, ssize_t arr_size)
 static void *
 tp_thread_routine(void *args)
 {
-        printf("In tp_thread_routine!\n");
         TPData data = *(TPData *) args;
         ssize_t arr_ptr;
 #if defined(CHUNK_SIZE) && CHUNK_SIZE > 1
@@ -81,12 +80,14 @@ tp_thread_routine(void *args)
         return NULL;
 }
 
-#define thread_pool(arr, n, esize, f)                                                             \
+#define thread_pool(arr, n, esize, f, ...)                                                             \
         do {                                                                                      \
                 __auto_type __array__ = (arr);                                                    \
                 __auto_type __function__ = (f);                                                   \
                 ssize_t next_index = 0;                                                           \
-                pthread_t threads[NUM_THREADS];                                                   \
+                ssize_t num_threads = NUM_THREADS;                                             \
+                __VA_OPT__(num_threads = __VA_ARGS__);                                            \
+                pthread_t threads[num_threads];                                                   \
                 pthread_mutex_t next_ptr_mutex;                                                   \
                 TPData data;                                                                      \
                 pthread_mutex_init(&next_ptr_mutex, NULL);                                        \
@@ -98,13 +99,11 @@ tp_thread_routine(void *args)
                         .next_index = &next_index,                                                \
                         .mutex = &next_ptr_mutex,                                                 \
                 };                                                                                \
-                for (int i = 0; i < NUM_THREADS; i++) {                                           \
-                        LOG("[CREAT] create new thread %d\n", i);                                 \
+                for (int i = 0; i < num_threads; i++) {                                           \
+                        LOG("[CREATE] create new thread %d\n", i);                                \
                         assert(pthread_create(threads + i, NULL, tp_thread_routine, &data) == 0); \
-                        LOG("[CREATED] thread %d\n", i);                                          \
                 }                                                                                 \
-                for (int i = 0; i < NUM_THREADS; i++) {                                           \
-                        LOG("[JOIN] waiting for thread %d\n", i);                                 \
+                for (int i = 0; i < num_threads; i++) {                                           \
                         assert(pthread_join(threads[i], NULL) == 0);                              \
                         LOG("[JOINED] thread %d\n", i);                                           \
                 }                                                                                 \
