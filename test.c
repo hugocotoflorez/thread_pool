@@ -1,18 +1,15 @@
-#include <math.h>
+#include <stdint.h>
 #include <time.h>
 
 #define TP_IMPLEMENTATION
 #include "tp.h"
 
-typedef struct {
-        int a, b;
-} TYPE;
+typedef char TYPE;
 
 void
 _sqrt(TYPE *n)
 {
-        n->a = n->a + n->b;
-        usleep(2);
+        *n = 1;
 }
 
 struct timespec tp;
@@ -33,15 +30,21 @@ struct timespec tp;
 int
 main()
 {
-        int ARR_SIZE = 1024;
-        TYPE arr[ARR_SIZE];
-        for (int i = 0; i < ARR_SIZE; i++) {
-                arr[i] = (TYPE) { i, i % 3 };
-        }
+        TYPE *arr = NULL;
+        ssize_t max_value = -1 ^ ((size_t) 0x1 << (sizeof(ssize_t) * 8 - 1));
+        for (ssize_t ARR_SIZE = 1; ARR_SIZE < max_value; ARR_SIZE *= 2) {
+                printf("Size: %zd / %zd\n", ARR_SIZE, max_value);
+                arr = realloc(arr, ARR_SIZE * sizeof(TYPE));
 
-        TIME_START();
-        thread_pool(arr, ARR_SIZE, sizeof(TYPE), _sqrt, 4);
-        TIME_REPORT();
+                TIME_START();
+                thread_pool(arr, ARR_SIZE, sizeof(TYPE), _sqrt, 12);
+                TIME_REPORT();
+
+                for (ssize_t i = 0; i < ARR_SIZE; i++) {
+                        assert(arr[i] == 1);
+                }
+        }
+        free(arr);
 
         return 0;
 }
