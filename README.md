@@ -2,7 +2,7 @@
 
 ## Syntax
 ```c
-void thread_pool(T array[arrlen], size_t arrlen, size_t elemsize, void (*func)(T *), int numthreads = NUM_THREADS);
+void thread_pool(T array[arrlen], size_t arrlen, size_t elemsize, void (*func)(T *));
 ```
 
 ## Description
