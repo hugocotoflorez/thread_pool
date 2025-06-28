@@ -2,7 +2,7 @@
 #define TP_H_
 
 #define TP_DEBUG 0
-#define NUM_THREADS 1
+#define NUM_THREADS 12
 #define CHUNK_SIZE 1024 * 1024
 
 /* Looks like the chunk size do not modify eficiency. */
@@ -20,10 +20,7 @@
 #include <time.h>
 #include <unistd.h>
 
-
-#define TP_IMPLEMENTATION
 #ifdef TP_IMPLEMENTATION
-
 
 #if defined(TP_DEBUG) && TP_DEBUG > 0
 #define LOG(format, ...) printf(format, ##__VA_ARGS__)
@@ -93,39 +90,36 @@ tp_thread_routine(void *args)
         return NULL;
 }
 
-#define thread_pool(arr, n, esize, f, ...)                                                        \
-        do {                                                                                      \
-                __auto_type __array__ = (arr);                                                    \
-                __auto_type __function__ = (f);                                                   \
-                ssize_t next_index = 0;                                                           \
-                ssize_t num_threads = NUM_THREADS;                                                \
-                __VA_OPT__(num_threads = __VA_ARGS__);                                            \
-                pthread_t threads[num_threads];                                                   \
-                pthread_mutex_t next_ptr_mutex;                                                   \
-                TPData data;                                                                      \
-                ssize_t i;                                                                        \
-                pthread_mutex_init(&next_ptr_mutex, NULL);                                        \
-                data = (TPData) {                                                                 \
-                        .array = (void *) (__array__),                                            \
-                        .func = (void (*)(void *))(__function__),                                 \
-                        .size = (n),                                                              \
-                        .elemsize = (esize),                                                      \
-                        .next_index = &next_index,                                                \
-                        .mutex = &next_ptr_mutex,                                                 \
-                };                                                                                \
-                for (i = 0; i < num_threads - 1; i++) {                                           \
-                        LOG("[CREATE] create new thread %zu\n", i);                               \
-                        assert(pthread_create(threads + i, NULL, tp_thread_routine, &data) == 0); \
-                }                                                                                 \
-                tp_thread_routine(&data);                                                         \
-                for (i = 0; i < num_threads - 1; i++) {                                           \
-                        assert(pthread_join(threads[i], NULL) == 0);                              \
-                        LOG("[JOINED] thread %zu\n", i);                                          \
-                }                                                                                 \
-                LOG("[JOINED] ALL\n");                                                            \
-                pthread_mutex_destroy(&next_ptr_mutex);                                           \
-                LOG("pthread_mutex_destroy \n");                                                  \
-        } while (0);
+void
+thread_pool(void *arr, ssize_t n, ssize_t esize, void (*f)(void *))
+{
+        ssize_t next_index = 0;
+        pthread_t threads[NUM_THREADS];
+        pthread_mutex_t next_ptr_mutex;
+        TPData data;
+        ssize_t i;
+        pthread_mutex_init(&next_ptr_mutex, NULL);
+        data = (TPData) {
+                .array = (char *) arr,
+                .func = f,
+                .size = n,
+                .elemsize = esize,
+                .next_index = &next_index,
+                .mutex = &next_ptr_mutex,
+        };
+        for (i = 0; i < NUM_THREADS - 1; i++) {
+                LOG("[CREATE] create new thread %zu\n", i);
+                assert(pthread_create(threads + i, NULL, tp_thread_routine, &data) == 0);
+        }
+        tp_thread_routine(&data);
+        for (i = 0; i < NUM_THREADS - 1; i++) {
+                assert(pthread_join(threads[i], NULL) == 0);
+                LOG("[JOINED] thread %zu\n", i);
+        }
+        LOG("[JOINED] ALL\n");
+        pthread_mutex_destroy(&next_ptr_mutex);
+        LOG("pthread_mutex_destroy \n");
+}
 
 #endif // TP_IMPLEMENTATION
 #endif // TP_H_
